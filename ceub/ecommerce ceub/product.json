@@ -1,0 +1,39 @@
+[
+    {
+        "id": 1,
+        "name": "Skate 1",
+        "price": 50,
+        "image": "images/1.webp"
+    },
+    {
+        "id": 2,
+        "name": "Skate 2",
+        "price": 60,
+        "image": "images/2.webp"
+    },
+    {
+        "id": 3,
+        "name": "Skate 3",
+        "price": 120,
+        "image": "images/3.webp"
+    }
+    ,
+    {
+        "id": 4,
+        "name": "Skate 4",
+        "price": 30,
+        "image": "images/4.webp"
+    },
+    {
+        "id": 5,
+        "name": "Skate 5",
+        "price": 40,
+        "image": "images/5.webp"
+    },
+    {
+        "id": 6,
+        "name": "Skate 6",
+        "price": 300,
+        "image": "images/6.webp"
+    }
+]
