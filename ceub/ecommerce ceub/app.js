@@ -1,132 +1,248 @@
-let iconCart = document.querySelector('.iconCart');
-let cart = document.querySelector('.cart');
-let container = document.querySelector('.container');
-let close = document.querySelector('.close');
+/**
+ * Módulo CartUI - Responsável pela interface do carrinho
+ * Encapsula toda a lógica de manipulação do DOM relacionada ao carrinho
+ */
+const CartUI = (() => {
+    // Elementos DOM privados
+    const elements = {
+        iconCart: document.querySelector('.iconCart'),
+        cart: document.querySelector('.cart'),
+        container: document.querySelector('.container'),
+        close: document.querySelector('.close'),
+        listCart: document.querySelector('.listCart'),
+        totalQuantity: document.querySelector('.totalQuantity')
+    };
 
-iconCart.addEventListener('click', () => {
-    if (cart.style.right == '-100%') {
-        cart.style.right = '0';
-        container.style.transform = 'translateX(-400px)';
-    } else {
-        cart.style.right = '-100%';
-        container.style.transform = 'translateX(0)';
+    // Inicializa event listeners
+    function initEventListeners() {
+        elements.iconCart.addEventListener('click', toggleCart);
+        elements.close.addEventListener('click', closeCart);
     }
-})
-close.addEventListener('click', () => {
-    cart.style.right = '-100%';
-    container.style.transform = 'translateX(0)';
-})
 
-let products = null;
-// pega info do json
-fetch('product.json')
-    .then(response => response.json())
-    .then(data => {
-        products = data;
-        addDataToHTML();
-    })
+    // Alterna a visibilidade do carrinho
+    function toggleCart() {
+        if (elements.cart.style.right === '-100%') {
+            openCart();
+        } else {
+            closeCart();
+        }
+    }
 
-// mostra data em lista no html
-function addDataToHTML() {
-    // remove data default do html
-    let listProductHTML = document.querySelector('.listProduct');
-    listProductHTML.innerHTML = '';
+    // Abre o carrinho
+    function openCart() {
+        elements.cart.style.right = '0';
+        elements.container.style.transform = 'translateX(-400px)';
+    }
 
-    // adiciona new data
-    if (products != null) {
-        products.forEach(product => {
-            let newProduct = document.createElement('div');
-            newProduct.classList.add('item');
-            newProduct.innerHTML =
-                `<img src="${product.image}">
+    // Fecha o carrinho
+    function closeCart() {
+        elements.cart.style.right = '-100%';
+        elements.container.style.transform = 'translateX(0)';
+    }
+
+    // Atualiza a exibição do carrinho
+    function updateCartDisplay(cartItems) {
+        elements.listCart.innerHTML = '';
+        let totalQuantity = 0;
+
+        if (cartItems) {
+            cartItems.forEach(product => {
+                if (product) {
+                    renderCartItem(product);
+                    totalQuantity += product.quantity;
+                }
+            });
+        }
+
+        elements.totalQuantity.innerText = totalQuantity;
+    }
+
+    // Renderiza um item do carrinho
+    function renderCartItem(product) {
+        const newCart = document.createElement('div');
+        newCart.classList.add('item');
+        newCart.innerHTML = `
+            <img src="${product.image}">
+            <div class="content">
+                <div class="name">${product.name}</div>
+                <div class="price">R$${product.price}</div>
+            </div>
+            <div class="quantity">
+                <button data-id="${product.id}" data-action="decrease">-</button>
+                <span class="value">${product.quantity}</span>
+                <button data-id="${product.id}" data-action="increase">+</button>
+            </div>`;
+        elements.listCart.appendChild(newCart);
+    }
+
+    // Expõe apenas os métodos necessários
+    return {
+        init: initEventListeners,
+        updateDisplay: updateCartDisplay,
+        closeCart: closeCart
+    };
+})();
+
+/**
+ * Módulo ProductUI - Responsável pela exibição dos produtos
+ */
+const ProductUI = (() => {
+    // Elemento DOM privado
+    const listProductHTML = document.querySelector('.listProduct');
+
+    // Renderiza os produtos na página
+    function renderProducts(products) {
+        listProductHTML.innerHTML = '';
+
+        if (products) {
+            products.forEach(product => {
+                renderProductItem(product);
+            });
+        }
+    }
+
+    // Renderiza um item de produto
+    function renderProductItem(product) {
+        const newProduct = document.createElement('div');
+        newProduct.classList.add('item');
+        newProduct.innerHTML = `
+            <img src="${product.image}">
             <h2>${product.name}</h2>
             <div class="price">R$${product.price}</div>
-            <button onclick="addCart(${product.id})">Adicionar ao Carrinho</button>`;
-
-            listProductHTML.appendChild(newProduct);
-        })
+            <button data-id="${product.id}" class="add-to-cart">Adicionar ao Carrinho</button>`;
+        listProductHTML.appendChild(newProduct);
     }
-}
 
-let listCart = [];
+    return {
+        render: renderProducts
+    };
+})();
 
-function checkCart() {
-    var cookieValue = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('listCart='));
-    if (cookieValue) {
-        listCart = JSON.parse(cookieValue.split('=')[1]);
+/**
+ * Módulo CartManager - Responsável pela lógica do carrinho
+ */
+const CartManager = (() => {
+    let listCart = [];
+    let products = null;
+
+    // Carrega produtos do JSON
+    async function loadProducts() {
+        try {
+            const response = await fetch('product.json');
+            products = await response.json();
+            ProductUI.render(products);
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
     }
-}
-function addCart($idProduct) {
-    let productCopy = JSON.parse(JSON.stringify(products));
-    //se o produto nao estiver no carrinho
-    if (!listCart[$idProduct]) {
-        let dataProduct = productCopy.filter(
-            product => product.id == $idProduct
-        )[0];
-        // adiciona produto no carrinho
-        listCart[$idProduct] = dataProduct;
-        listCart[$idProduct].quantity = 1;
-    } else {
-        // se o produto ja estiver no carrinho
-        // só aumenta a quantidade
-        listCart[$idProduct].quantity++;
+
+    // Carrega o carrinho do cookie
+    function loadCart() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('listCart='));
+        if (cookieValue) {
+            listCart = JSON.parse(cookieValue.split('=')[1]);
+        }
+        return [...listCart];
     }
-    // salva as infos do carrinho em cookie para salvar qnd desliga
-    let timeSave = "expires=Thu, 31 Dec 2025 23:59:59 UTC";
-    document.cookie = "listCart=" + JSON.stringify(listCart) + "; expires=Thu, 31 Dec 2025 23:59:59 UTC; path=/;";
-    addCartToHTML();
-}
-addCartToHTML();
-function addCartToHTML() {
-    //limpa data default;
-    let listCartHTML = document.querySelector('.listCart');
-    listCartHTML.innerHTML = '';
 
-    let totalHTML = document.querySelector('.totalQuantity');
-    let totalQuantity = 0;
+    // Adiciona produto ao carrinho
+    function addToCart(productId) {
+        if (!products) return;
 
-    if (listCart) {
-        listCart.forEach(product => {
-            if (product) {
-                let newCart = document.createElement('div');
-                newCart.classList.add('item');
-                newCart.innerHTML =
-                    `<img src="${product.image}">
-                    <div class="content">
-                        <div class="name">${product.name}</div>
-                        <div class="price">R$${product.price}</div>
-                    </div>
-                    <div class="quantity">
-                        <button onclick="changeQuantity(${product.id}, '-')">-</button>
-                        <span class="value">${product.quantity}</span>
-                        <button onclick="changeQuantity(${product.id}, '+')">+</button>
-                    </div>`;
-                listCartHTML.appendChild(newCart);
-                totalQuantity = totalQuantity + product.quantity;
+        const productCopy = JSON.parse(JSON.stringify(products));
+        const productToAdd = productCopy.find(p => p.id == productId);
+
+        if (!productToAdd) return;
+
+        if (!listCart[productId]) {
+            productToAdd.quantity = 1;
+            listCart[productId] = productToAdd;
+        } else {
+            listCart[productId].quantity++;
+        }
+
+        saveCart();
+    }
+
+    // Altera quantidade de um produto no carrinho
+    function changeQuantity(productId, operation) {
+        if (!listCart[productId]) return;
+
+        switch (operation) {
+            case 'increase':
+                listCart[productId].quantity++;
+                break;
+            case 'decrease':
+                listCart[productId].quantity--;
+                if (listCart[productId].quantity <= 0) {
+                    delete listCart[productId];
+                }
+                break;
+        }
+
+        saveCart();
+    }
+
+    // Salva o carrinho no cookie
+    function saveCart() {
+        const expires = "expires=Thu, 31 Dec 2025 23:59:59 UTC";
+        document.cookie = `listCart=${JSON.stringify(listCart)}; ${expires}; path=/;`;
+        CartUI.updateDisplay(getCartItems());
+    }
+
+    // Obtém itens do carrinho
+    function getCartItems() {
+        return [...listCart];
+    }
+
+    return {
+        loadProducts,
+        loadCart,
+        addToCart,
+        changeQuantity,
+        getCartItems
+    };
+})();
+
+/**
+ * Módulo EventManager - Centraliza o gerenciamento de eventos
+ */
+const EventManager = (() => {
+    function init() {
+        // Event delegation para botões de adicionar ao carrinho
+        document.querySelector('.listProduct').addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-to-cart')) {
+                const productId = e.target.getAttribute('data-id');
+                CartManager.addToCart(productId);
             }
-        })
-    }
-    totalHTML.innerText = totalQuantity;
-}
-function changeQuantity($idProduct, $type) {
-    switch ($type) {
-        case '+':
-            listCart[$idProduct].quantity++;
-            break;
-        case '-':
-            listCart[$idProduct].quantity--;
-            if (listCart[$idProduct].quantity <= 0) {
-                delete listCart[$idProduct];
+        });
+
+        // Event delegation para botões de quantidade no carrinho
+        document.querySelector('.listCart').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const productId = e.target.getAttribute('data-id');
+                const action = e.target.getAttribute('data-action');
+                CartManager.changeQuantity(productId, action);
             }
-            break;
-
-        default:
-            break;
+        });
     }
-    let timeSave = "expires=Thu, 31 Dec 2025 23:59:59 UTC";
-    document.cookie = "listCart=" + JSON.stringify(listCart) + "; expires=Thu, 31 Dec 2025 23:59:59 UTC; path=/;";
 
-    addCartToHTML();
+    return {
+        init
+    };
+})();
+
+/**
+ * Inicialização da aplicação
+ */
+function initApp() {
+    CartUI.init();
+    EventManager.init();
+    CartManager.loadProducts();
+    CartManager.loadCart();
+    CartUI.updateDisplay(CartManager.getCartItems());
 }
+
+initApp();
