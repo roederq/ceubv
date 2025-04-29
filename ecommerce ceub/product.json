@@ -1,0 +1,39 @@
+[
+    {
+        "id": 1,
+        "name": "Animal burro",
+        "price": 50,
+        "image": "images/1.webp"
+    },
+    {
+        "id": 2,
+        "name": "MCcapi",
+        "price": 60,
+        "image": "images/2.webp"
+    },
+    {
+        "id": 3,
+        "name": "M18A1 Claymore",
+        "price": 120,
+        "image": "images/3.webp"
+    }
+    ,
+    {
+        "id": 4,
+        "name": "OwOri",
+        "price": 30,
+        "image": "images/4.webp"
+    },
+    {
+        "id": 5,
+        "name": "MR.FUZZY",
+        "price": 40,
+        "image": "images/5.webp"
+    },
+    {
+        "id": 6,
+        "name": "hug",
+        "price": 300,
+        "image": "images/6.webp"
+    }
+]
